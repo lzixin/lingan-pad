@@ -1,0 +1,1217 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>灵感停机坪</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #EDF1EC;
+  --surface: #E4EAE4;
+  --raised: #F8FAF6;
+  --ink: #26332D;
+  --ink-soft: #5B6A63;
+  --ink-faint: #96A39C;
+  --line: #CFD9D1;
+  --light: #E0A64E;
+  --light-glow: rgba(224, 166, 78, .38);
+  --accent: #46705E;
+  --accent-ink: #F6F8F4;
+  --danger: #C2654C;
+  --scrim: rgba(38, 51, 45, .18);
+  --shadow: 0 12px 32px -14px rgba(38, 51, 45, .35);
+  --side-w: 288px;
+  --font: "Nunito", -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #151A18;
+    --surface: #1B2220;
+    --raised: #222B28;
+    --ink: #DCE4DF;
+    --ink-soft: #9CAAA3;
+    --ink-faint: #63716B;
+    --line: #2D3833;
+    --light: #E9B865;
+    --light-glow: rgba(233, 184, 101, .32);
+    --accent: #8DBBA6;
+    --accent-ink: #151A18;
+    --danger: #E08B73;
+    --scrim: rgba(0, 0, 0, .45);
+    --shadow: 0 14px 34px -14px rgba(0, 0, 0, .7);
+    color-scheme: dark;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+textarea:focus-visible { outline: none; }
+[hidden] { display: none !important; }
+
+/* ---------- 侧边栏：月历 ---------- */
+.sidebar {
+  position: fixed; inset: 0 auto 0 0; z-index: 20;
+  width: var(--side-w);
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  padding: 20px 14px 40px;
+  overflow-y: auto;
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition: transform .28s cubic-bezier(.2, .7, .2, 1), visibility 0s linear .28s;
+}
+.app[data-sidebar="open"] .sidebar {
+  transform: none; visibility: visible;
+  transition: transform .28s cubic-bezier(.2, .7, .2, 1);
+}
+.side-close { position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; color: var(--ink-soft); }
+.side-close:hover { background: var(--raised); color: var(--ink); }
+
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin: 0 0 8px; padding-left: 4px; }
+.cal-title { font-size: 19px; font-weight: 600; letter-spacing: .01em; padding: 4px 6px; margin-left: -6px; border-radius: 8px; }
+.cal-title:hover { background: var(--raised); }
+.cal-nav { display: flex; gap: 2px; }
+.cal-nav button { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; color: var(--ink-soft); }
+.cal-nav button:hover { background: var(--raised); color: var(--ink); }
+.cal-week, .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+.cal-week span { text-align: center; font-size: 12px; font-weight: 600; color: var(--ink-soft); padding: 6px 0 4px; }
+.cal-day { position: relative; height: 42px; display: grid; place-items: start center; padding-top: 3px; font-size: 14px; font-variant-numeric: tabular-nums; border-radius: 10px; }
+.cal-day .n { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; transition: background .15s; }
+.cal-day:hover .n { background: var(--raised); }
+.cal-day:focus-visible { outline-offset: -2px; }
+.cal-day.out { color: var(--ink-faint); }
+.cal-day.future { color: var(--ink-faint); opacity: .55; cursor: default; }
+.cal-day.future:hover .n { background: none; }
+.cal-day.sel .n { box-shadow: inset 0 0 0 1.5px var(--accent); font-weight: 700; color: var(--ink); }
+.cal-day.today .n { background: var(--accent); color: var(--accent-ink); font-weight: 700; box-shadow: none; }
+.cal-day.has::after {
+  content: ""; position: absolute; left: 50%; bottom: 2px;
+  width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%;
+  background: var(--light);
+}
+.cal-day.has.out::after { opacity: .5; }
+.cal-day.all-done::after { background: var(--ink-faint); }
+
+.main { transition: margin-left .28s cubic-bezier(.2, .7, .2, 1); }
+@media (min-width: 900px) {
+  .app[data-sidebar="open"] .main { margin-left: var(--side-w); }
+  .scrim, .side-close { display: none; }
+}
+@media (max-width: 899px) {
+  .sidebar { padding-top: 52px; }
+  .scrim { position: fixed; inset: 0; z-index: 15; background: var(--scrim); opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .app[data-sidebar="open"] .scrim { opacity: 1; pointer-events: auto; }
+}
+
+/* ---------- 顶栏 ---------- */
+.top { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px 0; }
+.icon-btn { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; color: var(--ink-soft); }
+.icon-btn:hover, .icon-btn[aria-expanded="true"] { background: var(--surface); color: var(--ink); }
+.sync-wrap { position: relative; }
+.chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; line-height: 1; padding: 8px 13px;
+  border-radius: 999px; border: 1px solid var(--line); color: var(--ink-soft);
+}
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-faint); }
+.chip[data-tone="ok"]::before { background: var(--accent); }
+.chip[data-tone="err"]::before { background: var(--danger); }
+.chip[data-tone="cta"] { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+.chip[data-tone="cta"]::before { background: var(--light); }
+.chip:hover { border-color: var(--ink-faint); }
+.pop {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 30;
+  width: min(310px, calc(100vw - 32px));
+  background: var(--raised); border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: var(--shadow); padding: 16px;
+  font-size: 14px; line-height: 1.65; color: var(--ink-soft);
+}
+.pop p { margin: 0 0 12px; }
+.pop strong { color: var(--ink); font-weight: 600; word-break: break-all; }
+.pop .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { padding: 8px 14px; border-radius: 10px; font-size: 14px; font-weight: 600; background: var(--accent); color: var(--accent-ink); }
+.btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.btn.ghost:hover { box-shadow: inset 0 0 0 1px var(--ink-faint); }
+
+/* ---------- 当天 ---------- */
+.day { max-width: 640px; margin: 0 auto; padding: 36px 24px 140px; }
+.demo-bar {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  margin-bottom: 28px; padding: 10px 10px 10px 16px;
+  border: 1px dashed var(--ink-faint); border-radius: 12px;
+  font-size: 14px; color: var(--ink-soft);
+}
+.date-head h1 { margin: 0; font-size: clamp(44px, 9vw, 60px); line-height: 1.05; font-weight: 700; letter-spacing: -.02em; }
+.date-sub { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin: 10px 0 0; font-size: 15px; color: var(--ink-soft); }
+.back-today { color: var(--accent); font-weight: 600; }
+.back-today:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* 跑道：中线 + 每条想法一盏灯 */
+.runway { position: relative; margin-top: 34px; }
+.runway::before {
+  content: ""; position: absolute; left: 13px; top: 8px; bottom: 8px; width: 2px;
+  background: repeating-linear-gradient(to bottom, var(--line) 0 7px, transparent 7px 15px);
+}
+.runway:has(.ideas:empty)::before { display: none; }
+.ideas { list-style: none; margin: 0; padding: 0; position: relative; }
+
+/* 重要程度：没有 # 最大，# 越多越小 */
+.lv0 { --fs: 20px; --lh: 31px; --fw: 500; --dot: 11px; --tc: var(--ink); }
+.lv1 { --fs: 17px; --lh: 28px; --fw: 400; --dot: 9px;  --tc: var(--ink); }
+.lv2 { --fs: 15px; --lh: 25px; --fw: 400; --dot: 7px;  --tc: var(--ink-soft); }
+.lv3 { --fs: 13.5px; --lh: 22px; --fw: 400; --dot: 6px; --tc: var(--ink-soft); }
+
+.idea, .draft-row {
+  display: grid; grid-template-columns: 28px 1fr 28px; column-gap: 12px; align-items: start;
+  margin: 0 -10px; padding: 6px 10px; border-radius: 14px; position: relative;
+}
+.grip { width: 28px; height: var(--lh); display: grid; place-items: center; cursor: grab; touch-action: none; }
+.grip::before {
+  content: ""; width: var(--dot); height: var(--dot); border-radius: 50%;
+  background: var(--light);
+  box-shadow: 0 0 0 5px var(--bg), 0 0 14px 3px var(--light-glow);
+  transition: transform .15s ease, background .2s, box-shadow .2s;
+}
+.lv2 .grip::before, .lv3 .grip::before { box-shadow: 0 0 0 5px var(--bg), 0 0 8px 1px var(--light-glow); }
+.idea:hover .grip::before, .idea:focus-within .grip::before { transform: scale(1.25); }
+.idea textarea, .draft {
+  display: block; width: 100%; min-height: var(--lh); margin: 0; padding: 0;
+  border: 0; background: transparent; resize: none; overflow: hidden;
+  font: inherit; font-size: var(--fs); font-weight: var(--fw); line-height: var(--lh); color: var(--tc);
+  outline: none; transition: color .2s;
+}
+.draft { color: var(--ink); }
+.draft::placeholder { color: var(--ink-faint); opacity: 1; font-weight: 400; }
+.del {
+  width: 28px; height: var(--lh); display: grid; place-items: center; border-radius: 50%;
+  color: var(--ink-faint); opacity: 0; transition: opacity .15s, color .15s;
+}
+.idea:hover .del, .idea:focus-within .del { opacity: 1; }
+.del:hover { color: var(--ink); }
+@media (hover: none) {
+  .idea:hover .del { opacity: 0; }
+  .idea:focus-within .del { opacity: 1; }
+}
+.slot { width: 28px; height: var(--lh); display: grid; place-items: center; }
+.slot::before {
+  content: ""; width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid var(--ink-faint); background: var(--bg);
+  box-shadow: 0 0 0 5px var(--bg); transition: border-color .2s, transform .2s;
+}
+.draft-row.has-text .slot::before { border-color: var(--light); transform: scale(1.15); }
+
+/* 完成：双击划掉 */
+.idea.done textarea {
+  color: var(--ink-faint);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: var(--ink-faint);
+}
+.idea.done .grip::before { background: var(--ink-faint); box-shadow: 0 0 0 5px var(--bg); }
+
+.hint { margin: 12px 0 0 40px; font-size: 13px; line-height: 1.9; color: var(--ink-faint); opacity: 0; transition: opacity .25s; }
+.hint span { white-space: nowrap; margin-right: 14px; }
+.day:has(.draft:focus) .hint { opacity: 1; }
+kbd { font: inherit; font-size: 12px; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--line); color: var(--ink-soft); }
+.try-demo { margin: 36px 0 0 40px; font-size: 14px; color: var(--ink-soft); }
+.try-demo button { color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+/* 拖拽 */
+.idea.dragging { background: var(--raised); box-shadow: var(--shadow); z-index: 5; transition: none !important; }
+.idea.dragging .grip { cursor: grabbing; }
+.idea.dragging .grip::before { box-shadow: 0 0 0 5px var(--raised), 0 0 18px 6px var(--light-glow); transform: scale(1.25); }
+body.is-dragging { cursor: grabbing; user-select: none; -webkit-user-select: none; }
+
+/* 落地 */
+@keyframes settle { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@keyframes touchdown {
+  0% { transform: scale(2.3); box-shadow: 0 0 0 5px var(--bg), 0 0 26px 10px var(--light-glow); }
+  100% { transform: scale(1); }
+}
+.idea.landed { animation: settle .32s ease-out; }
+.idea.landed .grip::before { animation: touchdown .55s ease-out; }
+
+/* 提示条 */
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 40;
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 8px 8px 18px; border-radius: 999px;
+  background: var(--ink); color: var(--bg); font-size: 14px; box-shadow: var(--shadow);
+  opacity: 0; transform: translate(-50%, 16px); pointer-events: none;
+  transition: opacity .2s, transform .2s;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.toast button { color: var(--light); font-weight: 700; padding: 4px 12px; border-radius: 999px; }
+.toast button:hover { background: rgba(255, 255, 255, .08); }
+
+@media (max-width: 600px) {
+  .top { padding: 12px 12px 0; }
+  .day { padding: 24px 16px 120px; }
+  .hint { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="app" id="app" data-sidebar="closed">
+  <aside class="sidebar" id="sidebar" aria-label="日历">
+    <button class="side-close" id="side-close" type="button" aria-label="关闭日历">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3.5 3.5l7 7M10.5 3.5l-7 7"/></svg>
+    </button>
+    <div class="cal">
+      <div class="cal-head">
+        <button class="cal-title" id="cal-title" type="button" title="回到今天"></button>
+        <div class="cal-nav">
+          <button id="cal-prev" type="button" aria-label="上个月">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 15l-5-5 5-5"/></svg>
+          </button>
+          <button id="cal-next" type="button" aria-label="下个月">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 5l5 5-5 5"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="cal-week" aria-hidden="true"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <main class="main">
+    <header class="top">
+      <button class="icon-btn" id="toggle-side" type="button" aria-label="打开日历" aria-expanded="false" aria-controls="sidebar" title="日历">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2.5" y="3.5" width="15" height="13" rx="3"/><path d="M7.5 3.5v13"/></svg>
+      </button>
+      <div class="sync-wrap">
+        <button class="chip" id="chip" type="button" aria-haspopup="true" aria-expanded="false"></button>
+        <div class="pop" id="pop" hidden></div>
+      </div>
+    </header>
+
+    <section class="day">
+      <div class="demo-bar" id="demo-bar" hidden>
+        <span>这是示例数据，不会保存</span>
+        <button class="btn ghost" id="exit-demo" type="button">退出示例</button>
+      </div>
+      <div class="date-head">
+        <h1 id="date-title"></h1>
+        <p class="date-sub" id="date-sub"></p>
+      </div>
+      <div class="runway">
+        <ol class="ideas" id="ideas"></ol>
+        <div class="draft-row lv0" id="draft-row">
+          <span class="slot" aria-hidden="true"></span>
+          <textarea class="draft" id="draft" rows="1" aria-label="新的想法" spellcheck="false"></textarea>
+        </div>
+      </div>
+      <p class="hint"><span><kbd>回车</kbd> 落地</span><span><kbd>Shift</kbd> + <kbd>回车</kbd> 换行</span><span>结尾加 <kbd>#</kbd> 变次要，越多越小</span><span>双击划掉</span><span>拖小圆点排序</span></p>
+      <p class="try-demo" id="try-demo" hidden>第一次用？<button type="button" id="enter-demo">先看看示例</button></p>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ================= 常量与小工具 ================= */
+const FILE = 'ideas.md';
+const K = { cache: 'lingan:cache', base: 'lingan:base', side: 'lingan:sidebar', path: 'lingan:path' };
+const WEEK = ['日', '一', '二', '三', '四', '五', '六'];
+const API = '/api/ideas';
+const DEFAULT_PREAMBLE = `# 灵感停机坪
+
+<!-- 这个文件由「灵感停机坪」自动维护。
+格式：每天一个「## YYYY-MM-DD 周X」标题，日期从新到旧；每条想法是一个「- 」列表项，同一条想法的后续行缩进两个空格。
+「- [x] 」开头表示这条已经完成（划掉了）。
+行尾的 # 表示重要程度：没有 # 最重要，# 越多越不重要（如「想法##」）。
+可以直接编辑这个文件，页面开着时几秒内会自动合并改动。分析结果请写到别的文件里。 -->`;
+// 旧版说明自动换成新版
+const OLD_PREAMBLE_RE = /^# 灵感停机坪\s*<!-- 这个文件由「灵感停机坪(?:\.html)?」自动维护。[\s\S]*?-->$/;
+
+const ls = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+const $ = s => document.querySelector(s);
+const coarse = matchMedia('(pointer: coarse)').matches;
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const pad2 = n => String(n).padStart(2, '0');
+const ymd = (d = new Date()) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const toDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const wk = s => '周' + WEEK[toDate(s).getDay()];
+const diffDays = (a, b) => Math.round((toDate(b) - toDate(a)) / 864e5);
+const daysAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return ymd(d); };
+const shiftMonth = (ym, n) => { const d = new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + n, 1); return ymd(d).slice(0, 7); };
+
+/* 行尾 # = 重要程度。「C#」「F#」这种跟在英文字母或数字后面的 # 不算。 */
+function splitLevel(raw) {
+  const m = raw.match(/#+\s*$/);
+  if (!m) return { text: raw, level: 0 };
+  const before = raw.slice(0, m.index);
+  if (/[A-Za-z0-9]$/.test(before)) return { text: raw, level: 0 };
+  return { text: before.replace(/\s+$/, ''), level: m[0].trim().length };
+}
+const editForm = i => i.level ? i.text + (/[A-Za-z0-9]$/.test(i.text) ? ' ' : '') + '#'.repeat(i.level) : i.text;
+const lvClass = n => 'lv' + Math.min(n, 3);
+function setLevel(node, level) {
+  node.classList.remove('lv0', 'lv1', 'lv2', 'lv3');
+  node.classList.add(lvClass(level));
+}
+
+/* ================= md 读写 ================= */
+let seq = 0;
+const nid = () => 'i' + (++seq).toString(36);
+const mkIdea = (text, level = 0, done = false) => ({ id: nid(), text, level, done });
+const emptyDoc = () => ({ preamble: DEFAULT_PREAMBLE, days: new Map(), raw: [] });
+
+function parseMd(text) {
+  const doc = { preamble: '', days: new Map(), raw: [] };
+  const pre = [];
+  let day = null, raw = null, last = null;
+  for (const line of String(text || '').replace(/\r\n?/g, '\n').split('\n')) {
+    const h = line.match(/^##\s+(\d{4}-\d{2}-\d{2})\b/);
+    if (h) {
+      day = doc.days.get(h[1]) || { ideas: [], extra: [] };
+      doc.days.set(h[1], day); raw = null; last = null; continue;
+    }
+    if (/^##\s/.test(line) || (/^#\s/.test(line) && (day || raw))) {
+      raw = [line]; doc.raw.push(raw); day = null; last = null; continue;
+    }
+    if (raw) { raw.push(line); continue; }
+    if (!day) { pre.push(line); continue; }
+    const item = line.match(/^ ?[-*+]\s+(?:\[([ xX])\]\s*)?(.*)$/);
+    if (item) {
+      const t = item[2].trim();
+      last = null;
+      if (t) { last = mkIdea(t, 0, !!item[1] && item[1] !== ' '); day.ideas.push(last); }
+      continue;
+    }
+    const cont = line.match(/^(?: {2,}|\t)\s*(\S.*)$/);
+    if (cont && last) { last.text += '\n' + cont[1].trimEnd(); continue; }
+    last = null;
+    if (!line.trim()) { if (day.extra.length) day.extra.push(''); continue; }
+    day.extra.push(line);
+  }
+  for (const d of doc.days.values()) {
+    d.ideas = d.ideas.filter(i => { Object.assign(i, splitLevel(i.text)); return i.text.trim(); });
+  }
+  doc.preamble = pre.join('\n').trim();
+  if (OLD_PREAMBLE_RE.test(doc.preamble) && doc.preamble !== DEFAULT_PREAMBLE) doc.preamble = DEFAULT_PREAMBLE;
+  return doc;
+}
+
+function toMd(doc) {
+  const out = [];
+  if (doc.preamble.trim()) out.push(doc.preamble.trim(), '');
+  for (const d of [...doc.days.keys()].sort().reverse()) {
+    const day = doc.days.get(d);
+    const ideas = day.ideas.filter(i => i.text.trim());
+    const extra = day.extra.join('\n').trim();
+    if (!ideas.length && !extra) continue;
+    out.push(`## ${d} ${wk(d)}`, '');
+    for (const i of ideas) {
+      const [first, ...rest] = editForm({ text: i.text.trim(), level: i.level }).split('\n');
+      out.push((i.done ? '- [x] ' : '- ') + first.trim());
+      for (const r of rest) if (r.trim()) out.push('  ' + r.trim());
+    }
+    if (extra) { if (ideas.length) out.push(''); out.push(extra); }
+    out.push('');
+  }
+  for (const r of doc.raw) { const t = r.join('\n').trim(); if (t) out.push(t, ''); }
+  return out.join('\n').trim() + '\n';
+}
+
+/* 三方合并：本地 vs 上次同步的版本 vs 文件现在的样子。
+   本地删掉的不复活，文件里被别人（比如 agent）删掉或改掉的跟着变，双方新增的都保留。 */
+const keyOf = i => (i.done ? 'x' : 'o') + '\u0001' + i.level + '\u0001' + i.text.trim();
+function countKeys(list) {
+  const m = new Map();
+  for (const i of list) if (i.text.trim()) { const k = keyOf(i); m.set(k, (m.get(k) || 0) + 1); }
+  return m;
+}
+function merge3(local, base, file) {
+  const out = { preamble: file.preamble || local.preamble, days: new Map(), raw: file.raw.length ? file.raw : local.raw };
+  const dates = new Set([...local.days.keys(), ...file.days.keys()]);
+  for (const d of dates) {
+    const L = local.days.get(d)?.ideas || [];
+    const B = base.days.get(d)?.ideas || [];
+    const F = file.days.get(d)?.ideas || [];
+    const lc = countKeys(L), bc = countKeys(B), fc = countKeys(F);
+    const removed = new Map();
+    for (const [k, n] of bc) { const r = n - (fc.get(k) || 0); if (r > 0) removed.set(k, r); }
+    const toAdd = [], added = new Map();
+    for (const i of F) {
+      if (!i.text.trim()) continue;
+      const k = keyOf(i), b = bc.get(k) || 0;
+      const need = (fc.get(k) || 0) - b - Math.max(0, (lc.get(k) || 0) - b);
+      const done = added.get(k) || 0;
+      if (done < need) { toAdd.push(i); added.set(k, done + 1); }
+    }
+    const ideas = [];
+    for (const i of L) {
+      const k = i.text.trim() ? keyOf(i) : '';
+      if (k && removed.get(k) > 0) {
+        removed.set(k, removed.get(k) - 1);
+        // 同一句话只是被划掉或改了 #：原地替换，不挪位置
+        const j = toAdd.findIndex(a => a.text.trim() === i.text.trim());
+        if (j >= 0) { const a = toAdd.splice(j, 1)[0]; ideas.push({ id: i.id, text: a.text, level: a.level, done: a.done }); }
+        continue;
+      }
+      ideas.push(i);
+    }
+    for (const a of toAdd) ideas.push(mkIdea(a.text, a.level, a.done));
+    const extra = file.days.has(d) ? file.days.get(d).extra : (local.days.get(d)?.extra || []);
+    out.days.set(d, { ideas, extra });
+  }
+  return out;
+}
+/* 本地没改动时，直接采用文件的版本（保留文件里的顺序），只沿用已有的 id 以免打断光标 */
+function adopt(file, local) {
+  for (const [d, day] of file.days) {
+    const pool = [...(local.days.get(d)?.ideas || [])];
+    for (const i of day.ideas) {
+      const j = pool.findIndex(p => p.text.trim() === i.text.trim());
+      if (j >= 0) { i.id = pool[j].id; pool.splice(j, 1); }
+    }
+  }
+  return file;
+}
+
+/* ================= 状态 ================= */
+let doc = emptyDoc();
+let realDoc = null, demo = false, beforeDemo = null;
+let today = ymd();
+let view = today;
+let calMonth = today.slice(0, 7);
+let calFocus = null;
+let conn = 'connecting', connMsg = '';
+let filePath = '', fileHash = null;
+let baseText = '';
+let saveTimer = 0, chain = Promise.resolve();
+let dragging = false;
+let lastDeleted = null;
+
+const el = {
+  app: $('#app'), list: $('#ideas'), draft: $('#draft'), draftRow: $('#draft-row'),
+  title: $('#date-title'), sub: $('#date-sub'),
+  calTitle: $('#cal-title'), calGrid: $('#cal-grid'),
+  chip: $('#chip'), pop: $('#pop'), toast: $('#toast'),
+  toggle: $('#toggle-side'), scrim: $('#scrim'), sideClose: $('#side-close'),
+  demoBar: $('#demo-bar'), tryDemo: $('#try-demo'),
+};
+
+const dayOf = d => { let x = doc.days.get(d); if (!x) { x = { ideas: [], extra: [] }; doc.days.set(d, x); } return x; };
+const ideasOf = d => dayOf(d).ideas;
+const filled = list => list.filter(i => i.text.trim());
+const hasAnyIdeas = () => [...doc.days.values()].some(x => filled(x.ideas).length);
+
+/* ================= 渲染 ================= */
+function renderHeader() {
+  const d = toDate(view);
+  el.title.textContent = `${d.getMonth() + 1}月${d.getDate()}日`;
+  const bits = [];
+  if (d.getFullYear() !== toDate(today).getFullYear()) bits.push(`${d.getFullYear()}年`);
+  bits.push('星期' + WEEK[d.getDay()]);
+  const n = diffDays(view, today);
+  if (n === 0) bits.push('今天'); else if (n === 1) bits.push('昨天'); else if (n > 1 && n < 7) bits.push(`${n} 天前`);
+  const all = filled(ideasOf(view));
+  const finished = all.filter(i => i.done).length;
+  if (all.length) bits.push(`${all.length} 个想法`);
+  if (finished) bits.push(`划掉 ${finished} 个`);
+  el.sub.replaceChildren(...bits.map(t => Object.assign(document.createElement('span'), { textContent: t })));
+  if (view !== today) {
+    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'back-today', textContent: '回到今天' });
+    b.addEventListener('click', () => go(today));
+    el.sub.append(b);
+  }
+  document.title = view === today ? '灵感停机坪' : `${d.getMonth() + 1}月${d.getDate()}日 · 灵感停机坪`;
+}
+
+function rowEl(idea) {
+  const li = document.createElement('li');
+  li.className = 'idea ' + lvClass(idea.level) + (idea.done ? ' done' : '');
+  li.dataset.id = idea.id;
+  li.innerHTML =
+    '<button class="grip" type="button" tabindex="-1" aria-label="拖动排序" title="按住拖动排序"></button>' +
+    '<textarea rows="1" aria-label="想法" spellcheck="false"></textarea>' +
+    '<button class="del" type="button" tabindex="-1" aria-label="删除这条" title="删除">' +
+    '<svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3.5 3.5l7 7M10.5 3.5l-7 7"/></svg></button>';
+  const ta = li.querySelector('textarea');
+  ta.value = idea.text;
+  ta.dataset.id = idea.id;
+  return li;
+}
+
+function autosize(ta) { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
+function sizeAll() { document.querySelectorAll('textarea').forEach(autosize); }
+
+function renderList() {
+  const a = document.activeElement;
+  const keep = a && a.dataset && a.dataset.id ? { id: a.dataset.id, s: a.selectionStart, e: a.selectionEnd } : null;
+  el.list.replaceChildren(...ideasOf(view).map(rowEl));
+  sizeAll();
+  if (keep) {
+    const ta = el.list.querySelector(`textarea[data-id="${keep.id}"]`);
+    if (ta) { ta.focus({ preventScroll: true }); ta.setSelectionRange(keep.s, keep.e); }
+  }
+  el.draft.placeholder = view === today ? '想到什么，写下来' : '给这一天补一条';
+  el.tryDemo.hidden = demo || view !== today || hasAnyIdeas();
+}
+
+/* 月历 */
+let calRaf = 0;
+function renderCalSoon() { if (!calRaf) calRaf = requestAnimationFrame(() => { calRaf = 0; renderCal(); }); }
+function renderCal() {
+  const y = +calMonth.slice(0, 4), m = +calMonth.slice(5, 7);
+  el.calTitle.textContent = `${y}年${m}月`;
+  const first = new Date(y, m - 1, 1);
+  const start = new Date(y, m - 1, 1 - first.getDay());
+  const focusDate = [calFocus, view, today].find(d => d && d.slice(0, 7) === calMonth) || `${calMonth}-01`;
+  const frag = document.createDocumentFragment();
+  for (let k = 0; k < 42; k++) {
+    const dt = new Date(start.getFullYear(), start.getMonth(), start.getDate() + k);
+    const s = ymd(dt);
+    const ideas = filled(doc.days.get(s)?.ideas || []);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.date = s;
+    b.tabIndex = s === focusDate ? 0 : -1;
+    const cls = ['cal-day'];
+    if (s.slice(0, 7) !== calMonth) cls.push('out');
+    if (s > today) { cls.push('future'); b.setAttribute('aria-disabled', 'true'); }
+    if (s === today) cls.push('today');
+    if (s === view) { cls.push('sel'); b.setAttribute('aria-current', 'date'); }
+    if (ideas.length) {
+      cls.push('has');
+      if (ideas.every(i => i.done)) cls.push('all-done');
+      b.title = `${ideas.length} 个想法：${ideas[0].text.split('\n')[0]}`;
+    }
+    b.className = cls.join(' ');
+    b.setAttribute('aria-label', `${dt.getMonth() + 1}月${dt.getDate()}日${s === today ? '，今天' : ''}${ideas.length ? `，${ideas.length} 个想法` : ''}`);
+    b.append(Object.assign(document.createElement('span'), { className: 'n', textContent: dt.getDate() }));
+    frag.append(b);
+  }
+  el.calGrid.replaceChildren(frag);
+}
+
+const fileName = () => (filePath ? filePath.split(/[\\/]/).pop() : 'ideas.md');
+const CHIP = {
+  connecting: () => ['连接中', 'muted'],
+  ok: () => ['已存到 ' + fileName(), 'ok'],
+  offline: () => ['服务没开，先存在浏览器', 'err'],
+  error: () => ['写入出错', 'err'],
+  demo: () => ['示例模式', 'muted'],
+};
+function setConn(state, msg = '') {
+  conn = state; connMsg = msg;
+  const [text, tone] = CHIP[state]();
+  el.chip.textContent = text;
+  el.chip.dataset.tone = tone;
+  if (!el.pop.hidden) renderPop();
+}
+
+function renderAll() { renderHeader(); renderList(); renderCal(); }
+
+/* ================= 保存与同步（通过本地服务读写 ideas.md） ================= */
+function changed() { renderHeader(); renderCalSoon(); scheduleSave(); }
+function scheduleSave() {
+  if (demo) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flush, 300);
+}
+
+let syncing = false, again = false;
+async function flush() {
+  clearTimeout(saveTimer);
+  if (demo) return;
+  ls.set(K.cache, toMd(doc));
+  if (syncing) { again = true; return; }
+  syncing = true;
+  try {
+    do { again = false; await syncFile(); } while (again && !demo);
+  } catch (e) {
+    onSyncError(e);
+  } finally {
+    syncing = false;
+  }
+}
+
+async function getFile() {
+  const r = await fetch(API, { cache: 'no-store', headers: fileHash ? { 'If-None-Match': fileHash } : {} });
+  if (r.status === 304) return { text: baseText, hash: fileHash, path: filePath };
+  if (!r.ok) throw new Error(`读取失败（${r.status}）`);
+  return r.json();
+}
+
+async function syncFile() {
+  if (demo) return;
+  if (dragging) { scheduleSave(); return; }
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const file = await getFile();
+    if (demo || dragging) { scheduleSave(); return; }
+    // 换了一个 md 文件（--file 指到别处）：以那个文件为准；那边是空的就把现在的内容搬过去
+    if (file.path && file.path !== ls.get(K.path)) {
+      if (ls.get(K.path) && file.text.trim()) { replaceDoc(parseMd(file.text)); baseText = toMd(doc); }
+      else baseText = '';
+      ls.set(K.path, file.path);
+    }
+    filePath = file.path || filePath;
+    let local = toMd(doc);
+    if (file.text.trim() && file.text !== baseText) {
+      const fileDoc = parseMd(file.text);
+      replaceDoc(local === baseText ? adopt(fileDoc, doc) : merge3(doc, parseMd(baseText), fileDoc));
+      local = toMd(doc);
+    }
+    let hash = file.hash;
+    if (local !== file.text) {
+      const w = await fetch(API, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: local, ifMatch: file.hash }),
+      });
+      if (w.status === 409) { fileHash = null; continue; }   // 刚好被别人改了，重新合并一次
+      if (!w.ok) throw new Error(`写入失败（${w.status}）`);
+      hash = (await w.json()).hash;
+    }
+    baseText = local;
+    fileHash = hash;
+    ls.set(K.base, local);
+    ls.set(K.cache, local);
+    if (conn !== 'ok') setConn('ok');
+    return;
+  }
+  throw new Error('文件一直在被改动，稍后会再试');
+}
+
+function replaceDoc(next) {
+  const sig = () => (doc.days.get(view)?.ideas || []).map(keyOf).join('\u0002') + (doc.days.get(view)?.ideas || []).map(i => i.id).join();
+  const before = sig();
+  doc = next;
+  if (sig() !== before) renderList();
+  renderHeader();
+  renderCal();
+}
+
+function onSyncError(e) {
+  if (e instanceof TypeError) setConn('offline');           // fetch 连不上：服务没开
+  else setConn('error', (e && e.message) || '未知原因');
+}
+
+/* ================= 状态弹层 ================= */
+function renderPop() {
+  const p = el.pop;
+  const btn = (label, fn, ghost) => {
+    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'btn' + (ghost ? ' ghost' : ''), textContent: label });
+    b.addEventListener('click', fn); return b;
+  };
+  const para = text => Object.assign(document.createElement('p'), { textContent: text });
+  const actions = document.createElement('div'); actions.className = 'actions';
+  p.replaceChildren();
+  if (conn === 'ok' || conn === 'connecting') {
+    const s = para('正在写入 ');
+    s.append(Object.assign(document.createElement('strong'), { textContent: filePath || 'ideas.md' }));
+    s.append('。Claude 或 codex 改了这个文件，几秒内会自动同步过来。');
+    p.append(s);
+    if (filePath && navigator.clipboard) {
+      actions.append(btn('复制路径', () => {
+        navigator.clipboard.writeText(filePath).then(() => toast('路径已复制'), () => toast('复制没成功'));
+        closePop();
+      }, true));
+    }
+  } else if (conn === 'offline') {
+    p.append(para('连不上本地服务，可能终端窗口关了。想法先存在这个浏览器里，重新运行 npm start 之后会自动补进 ideas.md。'));
+    actions.append(btn('重试', () => { closePop(); flush(); }));
+  } else if (conn === 'error') {
+    p.append(para('写入没成功：' + connMsg + '。想法都还在浏览器里，会自动再试。'));
+    actions.append(btn('重试', () => { closePop(); flush(); }));
+  }
+  p.append(actions);
+}
+function openPop() { renderPop(); el.pop.hidden = false; el.chip.setAttribute('aria-expanded', 'true'); }
+function closePop() { el.pop.hidden = true; el.chip.setAttribute('aria-expanded', 'false'); }
+el.chip.addEventListener('click', () => {
+  if (conn === 'demo') { exitDemo(); return; }
+  el.pop.hidden ? openPop() : closePop();
+});
+document.addEventListener('pointerdown', e => {
+  if (!el.pop.hidden && !e.target.closest('.sync-wrap')) closePop();
+});
+
+/* ================= 侧边栏（月历）与导航 ================= */
+const narrow = () => innerWidth < 900;
+function setSide(open, remember = true) {
+  el.app.dataset.sidebar = open ? 'open' : 'closed';
+  el.toggle.setAttribute('aria-expanded', String(open));
+  el.toggle.setAttribute('aria-label', open ? '收起日历' : '打开日历');
+  if (remember && !narrow()) ls.set(K.side, open ? 'open' : 'closed');
+}
+el.toggle.addEventListener('click', () => setSide(el.app.dataset.sidebar !== 'open'));
+el.scrim.addEventListener('click', () => setSide(false));
+el.sideClose.addEventListener('click', () => setSide(false));
+
+el.calGrid.addEventListener('click', e => {
+  const b = e.target.closest('.cal-day');
+  if (!b || b.classList.contains('future')) return;
+  go(b.dataset.date);
+});
+el.calGrid.addEventListener('keydown', e => {
+  const b = e.target.closest('.cal-day'); if (!b) return;
+  const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key];
+  if (!step) return;
+  e.preventDefault();
+  const d = toDate(b.dataset.date); d.setDate(d.getDate() + step);
+  const s = ymd(d);
+  calFocus = s; calMonth = s.slice(0, 7);
+  renderCal();
+  el.calGrid.querySelector(`[data-date="${s}"]`)?.focus();
+});
+$('#cal-prev').addEventListener('click', () => { calMonth = shiftMonth(calMonth, -1); calFocus = null; renderCal(); });
+$('#cal-next').addEventListener('click', () => { calMonth = shiftMonth(calMonth, 1); calFocus = null; renderCal(); });
+el.calTitle.addEventListener('click', () => { calMonth = today.slice(0, 7); go(today); renderCal(); });
+
+function go(d) {
+  if (narrow()) setSide(false, false);
+  calMonth = d.slice(0, 7); calFocus = null;
+  if (d === view) { renderCal(); return; }
+  view = d;
+  el.draft.value = '';
+  draftInput();
+  renderAll();
+  window.scrollTo({ top: 0 });
+  if (!coarse) el.draft.focus({ preventScroll: true });
+}
+
+function checkToday() {
+  const t = ymd();
+  if (t === today) return;
+  const wasToday = view === today;
+  today = t;
+  if (wasToday) { view = t; calMonth = t.slice(0, 7); }
+  renderAll();
+}
+
+/* ================= 编辑 ================= */
+let composing = false;
+document.addEventListener('compositionstart', () => { composing = true; });
+document.addEventListener('compositionend', () => { setTimeout(() => { composing = false; }, 0); });
+const imeBusy = e => e.isComposing || e.keyCode === 229 || composing;
+const plainEnter = e => e.key === 'Enter' && !e.shiftKey && !e.altKey && !e.metaKey && !e.ctrlKey;
+
+const caretEnd = ta => { const n = ta.value.length; ta.setSelectionRange(n, n); };
+const lineH = ta => parseFloat(getComputedStyle(ta).lineHeight) || 28;
+const onFirstLine = ta => !ta.value.slice(0, ta.selectionStart).includes('\n') && (ta.selectionStart === 0 || ta.scrollHeight < lineH(ta) * 1.6);
+const onLastLine = ta => !ta.value.slice(ta.selectionEnd).includes('\n') && (ta.selectionEnd === ta.value.length || ta.scrollHeight < lineH(ta) * 1.6);
+const taOf = li => li && li.querySelector('textarea');
+const findIdx = id => ideasOf(view).findIndex(i => i.id === id);
+const ideaOfTa = ta => ideasOf(view)[findIdx(ta.dataset.id)];
+
+function draftInput() {
+  const v = el.draft.value;
+  el.draftRow.classList.toggle('has-text', !!v.trim());
+  setLevel(el.draftRow, splitLevel(v).level);
+  autosize(el.draft);
+}
+
+function insertAfter(idx, idea, focusAt) {
+  const ideas = ideasOf(view);
+  ideas.splice(idx + 1, 0, idea);
+  const li = rowEl(idea);
+  const ref = el.list.children[idx];
+  ref ? ref.after(li) : el.list.prepend(li);
+  const ta = taOf(li);
+  autosize(ta);
+  if (focusAt != null) { ta.focus(); ta.setSelectionRange(focusAt, focusAt); }
+  return li;
+}
+
+function commitDraft() {
+  const { text, level } = splitLevel(el.draft.value.trim());
+  if (!text.trim()) return;
+  const n = mkIdea(text.trim(), level);
+  ideasOf(view).push(n);
+  const li = rowEl(n);
+  li.classList.add('landed');
+  li.addEventListener('animationend', () => li.classList.remove('landed'), { once: true });
+  el.list.append(li);
+  autosize(taOf(li));
+  el.draft.value = '';
+  draftInput();
+  el.tryDemo.hidden = true;
+  changed();
+}
+
+function toggleDone(li) {
+  const idx = findIdx(li.dataset.id); if (idx < 0) return;
+  const idea = ideasOf(view)[idx];
+  if (!idea.text.trim()) return;
+  idea.done = !idea.done;
+  li.classList.toggle('done', idea.done);
+  changed();
+}
+
+el.draft.addEventListener('input', draftInput);
+el.draft.addEventListener('keydown', e => {
+  if (imeBusy(e)) return;
+  if (plainEnter(e)) { e.preventDefault(); commitDraft(); return; }
+  const last = el.list.lastElementChild;
+  if (e.key === 'Backspace' && !el.draft.value && last) { e.preventDefault(); taOf(last).focus(); caretEnd(taOf(last)); return; }
+  if (e.key === 'ArrowUp' && !e.shiftKey && last && onFirstLine(el.draft)) { e.preventDefault(); taOf(last).focus(); caretEnd(taOf(last)); }
+});
+
+el.list.addEventListener('input', e => {
+  const ta = e.target; if (!ta.matches('textarea')) return;
+  const idea = ideaOfTa(ta); if (!idea) return;
+  const { text, level } = splitLevel(ta.value);
+  idea.text = text; idea.level = level;
+  setLevel(ta.closest('li'), level);
+  autosize(ta);
+  changed();
+});
+
+// 编辑时把行尾的 # 显示出来方便改；离开时收起，只用字号表示
+el.list.addEventListener('focusin', e => {
+  const ta = e.target; if (!ta.matches('textarea')) return;
+  const idea = ideaOfTa(ta); if (!idea || !idea.level) return;
+  const s = ta.selectionStart, en = ta.selectionEnd;
+  ta.value = editForm(idea);
+  ta.setSelectionRange(Math.min(s, idea.text.length), Math.min(en, idea.text.length));
+  autosize(ta);
+});
+el.list.addEventListener('focusout', e => {
+  const ta = e.target; if (!ta.matches('textarea')) return;
+  const idx = findIdx(ta.dataset.id); if (idx < 0) return;
+  const idea = ideasOf(view)[idx];
+  if (!idea.text.trim()) {            // 空着离开：顺手收掉
+    ideasOf(view).splice(idx, 1);
+    ta.closest('li')?.remove();
+    changed();
+    return;
+  }
+  if (ta.value !== idea.text) { ta.value = idea.text; autosize(ta); }
+});
+
+// 双击划掉 / 恢复（第二下按下时不让浏览器去选词）
+el.list.addEventListener('mousedown', e => {
+  if (e.detail > 1 && e.target.matches('textarea')) e.preventDefault();
+});
+el.list.addEventListener('dblclick', e => {
+  if (e.target.closest('.del')) return;
+  const li = e.target.closest('.idea'); if (li) toggleDone(li);
+});
+
+el.list.addEventListener('keydown', e => {
+  const ta = e.target; if (!ta.matches('textarea') || imeBusy(e)) return;
+  const ideas = ideasOf(view);
+  const idx = findIdx(ta.dataset.id); if (idx < 0) return;
+  const li = ta.closest('li');
+  const { selectionStart: s, selectionEnd: en, value: v } = ta;
+
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); toggleDone(li); return; }
+
+  if (plainEnter(e)) {
+    e.preventDefault();
+    if (!ideas[idx].text.trim()) { (taOf(li.nextElementSibling) || el.draft).focus(); return; }
+    if (s === 0 && en === 0) {                 // 在开头回车：在上面空出一条
+      const n = mkIdea('');
+      ideas.splice(idx, 0, n);
+      const nl = rowEl(n); li.before(nl); autosize(taOf(nl)); taOf(nl).focus();
+      return;
+    }
+    const before = v.slice(0, s), after = v.slice(en).replace(/^\s+/, '');
+    Object.assign(ideas[idx], splitLevel(before));
+    ta.value = before; setLevel(li, ideas[idx].level); autosize(ta);
+    if (!splitLevel(after).text.trim() && idx === ideas.length - 1) { changed(); el.draft.focus(); return; }
+    const p = splitLevel(after);
+    insertAfter(idx, mkIdea(p.text, p.level), 0);
+    changed();
+    return;
+  }
+
+  if (e.key === 'Backspace' && s === 0 && en === 0) {
+    const cur = splitLevel(v);
+    if (idx > 0) {                             // 合并到上一条
+      e.preventDefault();
+      const prev = ideas[idx - 1], pos = prev.text.length;
+      prev.text += cur.text;
+      if (cur.level) prev.level = cur.level;   // 行尾的 # 跟着行尾走
+      ideas.splice(idx, 1);
+      const pta = taOf(li.previousElementSibling);
+      setLevel(li.previousElementSibling, prev.level);
+      li.remove();
+      pta.value = prev.text; pta.focus(); pta.setSelectionRange(pos, pos); autosize(pta);
+      changed();
+    } else if (!cur.text) {
+      e.preventDefault();
+      ideas.splice(idx, 1);
+      const next = taOf(li.nextElementSibling) || el.draft;
+      li.remove(); next.focus();
+      changed();
+    }
+    return;
+  }
+
+  if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.altKey) { e.preventDefault(); moveIdea(idx, e.key === 'ArrowUp' ? -1 : 1, li); return; }
+  if (e.key === 'ArrowUp' && !e.shiftKey && onFirstLine(ta)) {
+    const p = taOf(li.previousElementSibling);
+    if (p) { e.preventDefault(); p.focus(); caretEnd(p); }
+    return;
+  }
+  if (e.key === 'ArrowDown' && !e.shiftKey && onLastLine(ta)) {
+    e.preventDefault();
+    const n = taOf(li.nextElementSibling) || el.draft;
+    n.focus(); caretEnd(n);
+    return;
+  }
+  if (e.key === 'Escape') ta.blur();
+});
+
+// 粘贴多行：每行变成一条想法（行尾的 # 照样算重要程度）
+document.querySelector('.runway').addEventListener('paste', e => {
+  const ta = e.target; if (!ta.matches('textarea')) return;
+  const text = (e.clipboardData && e.clipboardData.getData('text/plain')) || '';
+  if (!/\n/.test(text.trim())) return;
+  const lines = text.replace(/\r\n?/g, '\n').split('\n')
+    .map(l => l.replace(/^\s*(?:[-*+•]|\d+[.)、])\s+/, '').replace(/^\[[ xX]\]\s*/, '').trim()).filter(Boolean);
+  if (lines.length < 2) return;
+  e.preventDefault();
+  const head = ta.value.slice(0, ta.selectionStart), tail = ta.value.slice(ta.selectionEnd);
+  lines[0] = head + lines[0];
+  const caret = lines[lines.length - 1].length;
+  lines[lines.length - 1] += tail;
+  const asIdea = t => { const p = splitLevel(t); return mkIdea(p.text, p.level); };
+  if (ta === el.draft) {
+    el.draft.value = lines.pop();
+    for (const t of lines) ideasOf(view).push(asIdea(t));
+    renderList(); draftInput();
+    el.draft.focus(); el.draft.setSelectionRange(caret, caret);
+  } else {
+    const idx = findIdx(ta.dataset.id);
+    const ideas = ideasOf(view);
+    Object.assign(ideas[idx], splitLevel(lines[0]));
+    const fresh = lines.slice(1).map(asIdea);
+    ideas.splice(idx + 1, 0, ...fresh);
+    renderList();
+    const lastTa = el.list.querySelector(`textarea[data-id="${fresh[fresh.length - 1].id}"]`);
+    lastTa.focus(); lastTa.setSelectionRange(caret, caret);
+  }
+  changed();
+});
+
+// 删除（可撤销）
+el.list.addEventListener('click', e => {
+  const b = e.target.closest('.del'); if (!b) return;
+  const li = b.closest('li');
+  const idx = findIdx(li.dataset.id); if (idx < 0) return;
+  const [gone] = ideasOf(view).splice(idx, 1);
+  li.remove();
+  changed();
+  if (gone.text.trim()) {
+    lastDeleted = { date: view, idx, idea: gone };
+    toast('删掉了一条想法', '撤销', undoDelete);
+  }
+});
+function undoDelete() {
+  if (!lastDeleted) return;
+  const { date, idx, idea } = lastDeleted;
+  lastDeleted = null;
+  const ideas = ideasOf(date);
+  ideas.splice(Math.min(idx, ideas.length), 0, idea);
+  if (date === view) renderList();
+  changed();
+}
+
+/* ================= 排序：拖动小圆点 / Alt+↑↓ ================= */
+function flip(nodes, mutate) {
+  const before = nodes.map(n => n.offsetTop);
+  mutate();
+  if (reduced) return;
+  nodes.forEach((n, i) => {
+    const dy = before[i] - n.offsetTop;
+    if (!dy || n.classList.contains('dragging')) return;
+    n.style.transition = 'none';
+    n.style.transform = `translateY(${dy}px)`;
+    n.offsetHeight;
+    n.style.transition = 'transform .18s ease';
+    n.style.transform = '';
+    n.addEventListener('transitionend', () => { n.style.transition = ''; }, { once: true });
+  });
+}
+
+function moveIdea(idx, step, li) {
+  const ideas = ideasOf(view);
+  const j = idx + step;
+  if (j < 0 || j >= ideas.length) return;
+  [ideas[idx], ideas[j]] = [ideas[j], ideas[idx]];
+  const other = step < 0 ? li.previousElementSibling : li.nextElementSibling;
+  flip([li, other], () => (step < 0 ? li.after(other) : li.before(other)));
+  changed();
+}
+
+el.list.addEventListener('pointerdown', e => {
+  const grip = e.target.closest('.grip');
+  if (!grip || e.button > 0) return;
+  e.preventDefault();
+  const row = grip.closest('.idea');
+  const startY = e.clientY;
+  const grab = e.clientY - row.getBoundingClientRect().top;
+  let moved = false;
+  try { grip.setPointerCapture(e.pointerId); } catch {}
+
+  const move = ev => {
+    if (!moved) {
+      if (Math.abs(ev.clientY - startY) < 4) return;
+      moved = true; dragging = true;
+      row.classList.add('dragging');
+      document.body.classList.add('is-dragging');
+    }
+    const y = ev.clientY - el.list.getBoundingClientRect().top - grab;
+    const yy = Math.max(-10, Math.min(el.list.offsetHeight - row.offsetHeight + 10, y));
+    const mid = yy + row.offsetHeight / 2;
+    let sib;
+    while ((sib = row.nextElementSibling) && mid > sib.offsetTop + sib.offsetHeight / 2) {
+      const s = sib; flip([s], () => row.before(s));
+    }
+    while ((sib = row.previousElementSibling) && mid < sib.offsetTop + sib.offsetHeight / 2) {
+      const s = sib; flip([s], () => row.after(s));
+    }
+    row.style.transform = `translateY(${yy - row.offsetTop}px)`;
+  };
+
+  const up = () => {
+    grip.removeEventListener('pointermove', move);
+    grip.removeEventListener('pointerup', up);
+    grip.removeEventListener('pointercancel', up);
+    try { grip.releasePointerCapture(e.pointerId); } catch {}
+    if (!moved) { const ta = taOf(row); ta.focus(); caretEnd(ta); return; }
+    row.classList.remove('dragging');
+    document.body.classList.remove('is-dragging');
+    if (!reduced) {
+      row.style.transition = 'transform .18s ease';
+      row.addEventListener('transitionend', () => { row.style.transition = ''; }, { once: true });
+    }
+    row.style.transform = '';
+    dragging = false;
+    const ideas = ideasOf(view);
+    const byId = new Map(ideas.map(i => [i.id, i]));
+    const next = [...el.list.children].map(li => byId.get(li.dataset.id)).filter(Boolean);
+    ideas.splice(0, ideas.length, ...next);
+    changed();
+  };
+  grip.addEventListener('pointermove', move);
+  grip.addEventListener('pointerup', up);
+  grip.addEventListener('pointercancel', up);
+});
+
+/* ================= 提示条 ================= */
+let toastTimer = 0;
+function toast(msg, action, fn) {
+  const t = el.toast;
+  t.replaceChildren(Object.assign(document.createElement('span'), { textContent: msg }));
+  if (action) {
+    const b = Object.assign(document.createElement('button'), { type: 'button', textContent: action });
+    b.addEventListener('click', () => { hideToast(); fn(); });
+    t.append(b);
+  }
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, 5000);
+}
+function hideToast() { el.toast.classList.remove('show'); }
+
+/* ================= 示例 ================= */
+function demoDoc() {
+  const d = emptyDoc();
+  const put = (n, list) => d.days.set(daysAgo(n), { ideas: list.map(t => {
+    const done = t.startsWith('[x] ');
+    const p = splitLevel(done ? t.slice(4) : t);
+    return mkIdea(p.text, p.level, done);
+  }), extra: [] });
+  put(0, ['每周把 ideas.md 丢给 Claude，让它找出反复出现的主题', '买一个放桌上的实体计时器，别再用手机计时#', '[x] 给妈妈回个电话#', '周六去图书馆，只带一本书和一支笔##', '给绿萝换个大一点的盆###']);
+  put(1, ['做饭前先把所有调料拿出来，减少中途分心', '写一篇「我是怎么同时开 20 个标签页的」##']);
+  put(4, ['试试「身体陪伴」：开着视频和朋友各干各的', '[x] 给总忘的事做一张冰箱贴清单#', '播客选题：成年后才知道自己是 ADHD#', '衣柜按颜色排，早上少做一个决定###']);
+  put(9, ['想学一点木工，先从做一个小板凳开始#']);
+  put(23, ['[x] 把所有密码迁到密码管理器里', '[x] 周日晚上留 15 分钟看下周日历#']);
+  return d;
+}
+function enterDemo() {
+  flush();
+  realDoc = doc; doc = demoDoc(); demo = true;
+  beforeDemo = [conn, connMsg];
+  setConn('demo');
+  el.demoBar.hidden = false;
+  view = today; calMonth = today.slice(0, 7);
+  renderAll();
+}
+function exitDemo() {
+  if (!demo) return;
+  doc = realDoc; realDoc = null; demo = false;
+  el.demoBar.hidden = true;
+  setConn(...beforeDemo);
+  view = today; calMonth = today.slice(0, 7);
+  renderAll();
+  if (!coarse) el.draft.focus();
+}
+$('#enter-demo').addEventListener('click', enterDemo);
+$('#exit-demo').addEventListener('click', exitDemo);
+
+/* ================= 全局 ================= */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (!el.pop.hidden) { closePop(); el.chip.focus(); return; }
+  if (narrow() && el.app.dataset.sidebar === 'open') setSide(false);
+});
+let rz = 0;
+addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(sizeAll); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(sizeAll);
+
+const pull = () => { if (!demo && !dragging) flush(); };
+addEventListener('focus', pull);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkToday(); pull(); } });
+setInterval(() => { if (!document.hidden) pull(); }, 3000);
+setInterval(checkToday, 30000);
+addEventListener('pagehide', () => {
+  if (demo) return;
+  const local = toMd(doc);
+  ls.set(K.cache, local);
+  if (conn === 'ok' && fileHash && local !== baseText) {
+    try {
+      fetch(API, { method: 'PUT', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: local, ifMatch: fileHash }) });
+    } catch {}
+  }
+});
+
+function init() {
+  const cached = ls.get(K.cache);
+  doc = cached ? parseMd(cached) : emptyDoc();
+  baseText = ls.get(K.base) || '';
+  if (ls.get(K.side) === 'open' && !narrow()) setSide(true, false);
+  renderAll();
+  draftInput();
+  if (!coarse) el.draft.focus();
+  setConn('connecting');
+  flush();
+}
+init();
+})();
+</script>
+</body>
+</html>
