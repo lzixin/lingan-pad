@@ -1,7 +1,7 @@
 # 灵感停机坪
 
-<!-- 这个文件由「灵感停机坪」自动维护。
-格式：每天一个「## YYYY-MM-DD 周X」标题，日期从新到旧；每条想法是一个「- 」列表项，同一条想法的后续行缩进两个空格。
-「- [x] 」开头表示这条已经完成（划掉了）。
-行尾的 # 表示重要程度：没有 # 最重要，# 越多越不重要（如「想法##」）。
-可以直接编辑这个文件，页面开着时几秒内会自动合并改动。分析结果请写到别的文件里。 -->
+<!-- This file is maintained automatically by Lingan Pad.
+Format: one "## YYYY-MM-DD weekday" heading per day, newest first; each idea is a "- " list item, with continuation lines indented by two spaces.
+A "- [x] " prefix marks an idea as complete (crossed out).
+Trailing # characters indicate priority: no # means highest priority; more # characters mean lower priority (e.g. "An idea ##").
+You can edit this file directly; changes are merged automatically within a few seconds while the page is open. Write analysis results to a separate file. -->

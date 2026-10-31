@@ -1,85 +1,85 @@
-# 灵感停机坪
+# Lingan Pad
 
-一个人用的想法记录页。没有数据库，也不用装任何依赖，所有想法都存在 `ideas.md` 里，Claude、codex 可以直接读。
+A personal page for capturing ideas. No database or dependencies to install: all ideas are stored in `ideas.md`, which Claude and Codex can read directly.
 
-## 启动
+## Getting started
 
-需要先装好 Node.js。在终端输入 `node -v`，能看到版本号就行（16 或更新）。
+Install Node.js 16 or later. Run `node -v` in your terminal to check the installed version.
 
 ```bash
 cd lingan-pad
 npm start
 ```
 
-启动后会自动用 Chrome 打开 http://localhost:4321 。
+The server automatically opens http://localhost:4321 in Chrome when it starts, falling back to your default browser if Chrome is unavailable.
 
-- 终端窗口开着，服务就一直在。关掉就在那个窗口按 `Ctrl+C`。
-- 服务已经开着时再运行一次 `npm start`，会直接帮你打开页面，不会重复启动。
-- 不用 npm 也可以：`node server.js`
+- Keep the terminal window open while using the app. Press `Ctrl+C` in that window to stop the server.
+- Running `npm start` while the server is already running opens the page without starting another server.
+- You can also run it without npm: `node server.js`.
 
-### 可选参数
+### Optional arguments
 
-| 参数 | 作用 |
+| Argument | Purpose |
 | --- | --- |
-| `--file ~/Notes/ideas.md` | 把想法存到别的地方，比如笔记库 |
-| `--port 5000` | 换个端口（默认 4321） |
-| `--no-open` | 启动时不自动打开浏览器 |
+| `--file ~/Notes/ideas.md` | Store ideas elsewhere, such as in your notes folder |
+| `--port 5000` | Use a different port (default: 4321) |
+| `--no-open` | Skip opening the browser on startup |
 
-用 npm 启动时，参数要写在 `--` 后面：
+When using npm, place arguments after `--`:
 
 ```bash
 npm start -- --file ~/Notes/ideas.md
 ```
 
-### 在任何目录一条命令打开（可选）
+### Open from any directory with one command (optional)
 
-把下面这行加到 `~/.zshrc`（Windows 用户跳过），路径改成你解压的位置：
+Add the following line to `~/.zshrc`, adjusting the path to your project location (skip this step on Windows):
 
 ```bash
 alias ideas='node ~/lingan-pad/server.js'
 ```
 
-然后运行 `source ~/.zshrc`。以后在终端输入 `ideas` 就能打开。
+Then run `source ~/.zshrc`. From then on, enter `ideas` in your terminal to open the app.
 
-## 怎么用
+## Usage
 
-| 操作 | 方法 |
+| Action | How |
 | --- | --- |
-| 新增一条 | 回车 |
-| 一条里换行 | Shift + 回车 |
-| 设成次要 | 行尾加 `#`，越多越次要、字越小；没有 `#` 最重要 |
-| 划掉 / 恢复 | 双击，或 Ctrl/⌘ + 回车 |
-| 排序 | 按住左边的小圆点拖动，或 Alt + ↑ / ↓ |
-| 看往日 | 左上角打开月历，有小点的日子有想法 |
-| 删除 | 鼠标移到一条上，点右边的 ×，5 秒内可以撤销 |
+| Add an idea | Enter |
+| Add a line break within an idea | Shift + Enter |
+| Lower the priority | Append `#` at the end; more markers mean lower priority and smaller text. No `#` means highest priority |
+| Cross out / restore | Double-click, or Ctrl/⌘ + Enter |
+| Reorder | Drag the dot on the left, or press Alt + ↑ / ↓ |
+| Browse previous days | Open the calendar at the top left; dots mark days with ideas |
+| Delete | Hover over an idea and click × on the right; undo is available for 5 seconds |
 
-`#` 只在编辑那条想法时显示，平时只用字号区分重要程度。`C#` 这种跟在英文字母后面的 `#` 不算。
+Priority markers (`#`) appear only while editing an idea; otherwise, font size indicates priority. A `#` immediately following an ASCII letter or digit, as in `C#`, does not count as a priority marker. Add a space before priority markers when the idea ends with an ASCII letter or digit.
 
-## ideas.md 的格式
+## ideas.md format
 
 ```markdown
-## 2026-10-29 周四
+## 2026-10-29 Thursday
 
-- 最重要的想法
-- [x] 已经划掉的想法#
-- 次要想法##
-- 一条多行的想法
-  第二行缩进两个空格
+- Highest-priority idea
+- [x] An idea that has been crossed out #
+- A lower-priority idea ##
+- A multiline idea
+  Indent the second line by two spaces
 ```
 
-- 每天一个 `## 日期` 标题，日期从新到旧。
-- `- [x]` 表示划掉了。
-- 行尾 `#` 越多越不重要。
+- Use one `## YYYY-MM-DD` heading per day, newest first. The app appends a weekday label when saving.
+- `- [x]` marks a crossed-out idea.
+- More trailing `#` characters mean lower priority.
 
-## 让 Claude / codex 分析
+## Analysis with Claude / Codex
 
-在这个文件夹里打开 Claude Code 或 codex，直接说「读一下 ideas.md，帮我找出最近反复出现的主题」之类的就行。文件开头有一段注释，向 agent 说明了格式。
+Open Claude Code or Codex in this folder and ask something like, "Read ideas.md and identify recurring themes in my recent ideas." A comment at the top of the file explains its format to the agent.
 
-- agent 可以直接改 `ideas.md`，比如划掉一条或调整 `#`。页面开着的话，几秒内会自动同步过来。
-- 分析结果请让它写到别的文件，比如 `ideas-review.md`，不要写进 `ideas.md`。
+- The agent can edit `ideas.md` directly, for example to cross out an idea or adjust its `#` markers. Changes sync automatically within a few seconds while the page is open.
+- Ask the agent to write analysis results to a separate file, such as `ideas-review.md`, rather than to `ideas.md`.
 
-## 遇到问题
+## Troubleshooting
 
-- **右上角显示「服务没开，先存在浏览器」**：终端里重新运行 `npm start`。这期间写的想法存在浏览器里，连上之后会自动补进 `ideas.md`。
-- **提示端口被占用**：换个端口，例如 `npm start -- --port 5000`。
-- **想换电脑或备份**：拷走 `ideas.md` 就行，它就是全部数据。
+- **The status at the top right says the server is offline and ideas are being saved in the browser:** Run `npm start` again in your terminal. Ideas entered while offline are stored in the browser and automatically added to `ideas.md` when it reconnects.
+- **The port is already in use:** Choose another port, for example `npm start -- --port 5000`.
+- **Moving to another computer or making a backup:** Copy `ideas.md`; it contains all your data.

@@ -62,7 +62,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 textarea:focus-visible { outline: none; }
 [hidden] { display: none !important; }
 
-/* ---------- 侧边栏：月历 ---------- */
+/* ---------- Sidebar: monthly calendar ---------- */
 .sidebar {
   position: fixed; inset: 0 auto 0 0; z-index: 20;
   width: var(--side-w);
@@ -117,7 +117,7 @@ textarea:focus-visible { outline: none; }
   .app[data-sidebar="open"] .scrim { opacity: 1; pointer-events: auto; }
 }
 
-/* ---------- 顶栏 ---------- */
+/* ---------- Top bar ---------- */
 .top { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px 0; }
 .icon-btn { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; color: var(--ink-soft); }
 .icon-btn:hover, .icon-btn[aria-expanded="true"] { background: var(--surface); color: var(--ink); }
@@ -147,7 +147,7 @@ textarea:focus-visible { outline: none; }
 .btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
 .btn.ghost:hover { box-shadow: inset 0 0 0 1px var(--ink-faint); }
 
-/* ---------- 当天 ---------- */
+/* ---------- Day view ---------- */
 .day { max-width: 640px; margin: 0 auto; padding: 36px 24px 140px; }
 .demo-bar {
   display: flex; justify-content: space-between; align-items: center; gap: 12px;
@@ -160,7 +160,7 @@ textarea:focus-visible { outline: none; }
 .back-today { color: var(--accent); font-weight: 600; }
 .back-today:hover { text-decoration: underline; text-underline-offset: 3px; }
 
-/* 跑道：中线 + 每条想法一盏灯 */
+/* Runway: a centerline and one light per idea */
 .runway { position: relative; margin-top: 34px; }
 .runway::before {
   content: ""; position: absolute; left: 13px; top: 8px; bottom: 8px; width: 2px;
@@ -169,7 +169,7 @@ textarea:focus-visible { outline: none; }
 .runway:has(.ideas:empty)::before { display: none; }
 .ideas { list-style: none; margin: 0; padding: 0; position: relative; }
 
-/* 重要程度：没有 # 最大，# 越多越小 */
+/* Priority: no # gives the largest text; more # characters make it smaller */
 .lv0 { --fs: 20px; --lh: 31px; --fw: 500; --dot: 11px; --tc: var(--ink); }
 .lv1 { --fs: 17px; --lh: 28px; --fw: 400; --dot: 9px;  --tc: var(--ink); }
 .lv2 { --fs: 15px; --lh: 25px; --fw: 400; --dot: 7px;  --tc: var(--ink-soft); }
@@ -214,7 +214,7 @@ textarea:focus-visible { outline: none; }
 }
 .draft-row.has-text .slot::before { border-color: var(--light); transform: scale(1.15); }
 
-/* 完成：双击划掉 */
+/* Completion: double-click to cross out */
 .idea.done textarea {
   color: var(--ink-faint);
   text-decoration: line-through;
@@ -230,13 +230,13 @@ kbd { font: inherit; font-size: 12px; padding: 1px 6px; border-radius: 6px; bord
 .try-demo { margin: 36px 0 0 40px; font-size: 14px; color: var(--ink-soft); }
 .try-demo button { color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 
-/* 拖拽 */
+/* Dragging */
 .idea.dragging { background: var(--raised); box-shadow: var(--shadow); z-index: 5; transition: none !important; }
 .idea.dragging .grip { cursor: grabbing; }
 .idea.dragging .grip::before { box-shadow: 0 0 0 5px var(--raised), 0 0 18px 6px var(--light-glow); transform: scale(1.25); }
 body.is-dragging { cursor: grabbing; user-select: none; -webkit-user-select: none; }
 
-/* 落地 */
+/* Landing animation */
 @keyframes settle { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 @keyframes touchdown {
   0% { transform: scale(2.3); box-shadow: 0 0 0 5px var(--bg), 0 0 26px 10px var(--light-glow); }
@@ -245,7 +245,7 @@ body.is-dragging { cursor: grabbing; user-select: none; -webkit-user-select: non
 .idea.landed { animation: settle .32s ease-out; }
 .idea.landed .grip::before { animation: touchdown .55s ease-out; }
 
-/* 提示条 */
+/* Toast notification */
 .toast {
   position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 40;
   display: flex; align-items: center; gap: 10px;
@@ -331,19 +331,19 @@ body.is-dragging { cursor: grabbing; user-select: none; -webkit-user-select: non
 (() => {
 'use strict';
 
-/* ================= 常量与小工具 ================= */
+/* ================= Constants and utilities ================= */
 const FILE = 'ideas.md';
 const K = { cache: 'lingan:cache', base: 'lingan:base', side: 'lingan:sidebar', path: 'lingan:path' };
 const WEEK = ['日', '一', '二', '三', '四', '五', '六'];
 const API = '/api/ideas';
 const DEFAULT_PREAMBLE = `# 灵感停机坪
 
-<!-- 这个文件由「灵感停机坪」自动维护。
-格式：每天一个「## YYYY-MM-DD 周X」标题，日期从新到旧；每条想法是一个「- 」列表项，同一条想法的后续行缩进两个空格。
-「- [x] 」开头表示这条已经完成（划掉了）。
-行尾的 # 表示重要程度：没有 # 最重要，# 越多越不重要（如「想法##」）。
-可以直接编辑这个文件，页面开着时几秒内会自动合并改动。分析结果请写到别的文件里。 -->`;
-// 旧版说明自动换成新版
+<!-- This file is maintained automatically by Lingan Pad.
+Format: one "## YYYY-MM-DD weekday" heading per day, newest first; each idea is a "- " list item, with continuation lines indented by two spaces.
+A "- [x] " prefix marks an idea as complete (crossed out).
+Trailing # characters indicate priority: no # means highest priority; more # characters mean lower priority (e.g. "An idea ##").
+You can edit this file directly; changes are merged automatically within a few seconds while the page is open. Write analysis results to a separate file. -->`;
+// Automatically replace legacy instructions with the current version.
 const OLD_PREAMBLE_RE = /^# 灵感停机坪\s*<!-- 这个文件由「灵感停机坪(?:\.html)?」自动维护。[\s\S]*?-->$/;
 
 const ls = {
@@ -362,7 +362,7 @@ const diffDays = (a, b) => Math.round((toDate(b) - toDate(a)) / 864e5);
 const daysAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return ymd(d); };
 const shiftMonth = (ym, n) => { const d = new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + n, 1); return ymd(d).slice(0, 7); };
 
-/* 行尾 # = 重要程度。「C#」「F#」这种跟在英文字母或数字后面的 # 不算。 */
+/* Trailing # characters set priority. Ignore # immediately after ASCII letters or digits, as in C# or F#. */
 function splitLevel(raw) {
   const m = raw.match(/#+\s*$/);
   if (!m) return { text: raw, level: 0 };
@@ -377,7 +377,7 @@ function setLevel(node, level) {
   node.classList.add(lvClass(level));
 }
 
-/* ================= md 读写 ================= */
+/* ================= Reading and writing Markdown ================= */
 let seq = 0;
 const nid = () => 'i' + (++seq).toString(36);
 const mkIdea = (text, level = 0, done = false) => ({ id: nid(), text, level, done });
@@ -440,8 +440,8 @@ function toMd(doc) {
   return out.join('\n').trim() + '\n';
 }
 
-/* 三方合并：本地 vs 上次同步的版本 vs 文件现在的样子。
-   本地删掉的不复活，文件里被别人（比如 agent）删掉或改掉的跟着变，双方新增的都保留。 */
+/* Three-way merge: local state, the last synced version, and the current file.
+   Keep local deletions, apply external deletions and edits (e.g. from an agent), and retain additions from both sides. */
 const keyOf = i => (i.done ? 'x' : 'o') + '\u0001' + i.level + '\u0001' + i.text.trim();
 function countKeys(list) {
   const m = new Map();
@@ -471,7 +471,7 @@ function merge3(local, base, file) {
       const k = i.text.trim() ? keyOf(i) : '';
       if (k && removed.get(k) > 0) {
         removed.set(k, removed.get(k) - 1);
-        // 同一句话只是被划掉或改了 #：原地替换，不挪位置
+        // If only completion or priority changed, replace the idea in place without reordering it.
         const j = toAdd.findIndex(a => a.text.trim() === i.text.trim());
         if (j >= 0) { const a = toAdd.splice(j, 1)[0]; ideas.push({ id: i.id, text: a.text, level: a.level, done: a.done }); }
         continue;
@@ -484,7 +484,7 @@ function merge3(local, base, file) {
   }
   return out;
 }
-/* 本地没改动时，直接采用文件的版本（保留文件里的顺序），只沿用已有的 id 以免打断光标 */
+/* With no local changes, adopt the file's version and order; reuse existing IDs to preserve the cursor. */
 function adopt(file, local) {
   for (const [d, day] of file.days) {
     const pool = [...(local.days.get(d)?.ideas || [])];
@@ -496,7 +496,7 @@ function adopt(file, local) {
   return file;
 }
 
-/* ================= 状态 ================= */
+/* ================= State ================= */
 let doc = emptyDoc();
 let realDoc = null, demo = false, beforeDemo = null;
 let today = ymd();
@@ -524,7 +524,7 @@ const ideasOf = d => dayOf(d).ideas;
 const filled = list => list.filter(i => i.text.trim());
 const hasAnyIdeas = () => [...doc.days.values()].some(x => filled(x.ideas).length);
 
-/* ================= 渲染 ================= */
+/* ================= Rendering ================= */
 function renderHeader() {
   const d = toDate(view);
   el.title.textContent = `${d.getMonth() + 1}月${d.getDate()}日`;
@@ -577,7 +577,7 @@ function renderList() {
   el.tryDemo.hidden = demo || view !== today || hasAnyIdeas();
 }
 
-/* 月历 */
+/* Monthly calendar */
 let calRaf = 0;
 function renderCalSoon() { if (!calRaf) calRaf = requestAnimationFrame(() => { calRaf = 0; renderCal(); }); }
 function renderCal() {
@@ -631,7 +631,7 @@ function setConn(state, msg = '') {
 
 function renderAll() { renderHeader(); renderList(); renderCal(); }
 
-/* ================= 保存与同步（通过本地服务读写 ideas.md） ================= */
+/* ================= Saving and syncing (ideas.md via the local server) ================= */
 function changed() { renderHeader(); renderCalSoon(); scheduleSave(); }
 function scheduleSave() {
   if (demo) return;
@@ -668,7 +668,7 @@ async function syncFile() {
   for (let attempt = 0; attempt < 3; attempt++) {
     const file = await getFile();
     if (demo || dragging) { scheduleSave(); return; }
-    // 换了一个 md 文件（--file 指到别处）：以那个文件为准；那边是空的就把现在的内容搬过去
+    // When --file points to a different Markdown file, adopt its contents, or copy the current contents if it is empty.
     if (file.path && file.path !== ls.get(K.path)) {
       if (ls.get(K.path) && file.text.trim()) { replaceDoc(parseMd(file.text)); baseText = toMd(doc); }
       else baseText = '';
@@ -688,7 +688,7 @@ async function syncFile() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: local, ifMatch: file.hash }),
       });
-      if (w.status === 409) { fileHash = null; continue; }   // 刚好被别人改了，重新合并一次
+      if (w.status === 409) { fileHash = null; continue; }   // An external edit occurred; merge again.
       if (!w.ok) throw new Error(`写入失败（${w.status}）`);
       hash = (await w.json()).hash;
     }
@@ -712,11 +712,11 @@ function replaceDoc(next) {
 }
 
 function onSyncError(e) {
-  if (e instanceof TypeError) setConn('offline');           // fetch 连不上：服务没开
+  if (e instanceof TypeError) setConn('offline');           // Fetch cannot connect: the server is not running.
   else setConn('error', (e && e.message) || '未知原因');
 }
 
-/* ================= 状态弹层 ================= */
+/* ================= Status popover ================= */
 function renderPop() {
   const p = el.pop;
   const btn = (label, fn, ghost) => {
@@ -756,7 +756,7 @@ document.addEventListener('pointerdown', e => {
   if (!el.pop.hidden && !e.target.closest('.sync-wrap')) closePop();
 });
 
-/* ================= 侧边栏（月历）与导航 ================= */
+/* ================= Sidebar (monthly calendar) and navigation ================= */
 const narrow = () => innerWidth < 900;
 function setSide(open, remember = true) {
   el.app.dataset.sidebar = open ? 'open' : 'closed';
@@ -809,7 +809,7 @@ function checkToday() {
   renderAll();
 }
 
-/* ================= 编辑 ================= */
+/* ================= Editing ================= */
 let composing = false;
 document.addEventListener('compositionstart', () => { composing = true; });
 document.addEventListener('compositionend', () => { setTimeout(() => { composing = false; }, 0); });
@@ -887,7 +887,7 @@ el.list.addEventListener('input', e => {
   changed();
 });
 
-// 编辑时把行尾的 # 显示出来方便改；离开时收起，只用字号表示
+// Show trailing # characters while editing; hide them on blur and indicate priority with font size.
 el.list.addEventListener('focusin', e => {
   const ta = e.target; if (!ta.matches('textarea')) return;
   const idea = ideaOfTa(ta); if (!idea || !idea.level) return;
@@ -900,7 +900,7 @@ el.list.addEventListener('focusout', e => {
   const ta = e.target; if (!ta.matches('textarea')) return;
   const idx = findIdx(ta.dataset.id); if (idx < 0) return;
   const idea = ideasOf(view)[idx];
-  if (!idea.text.trim()) {            // 空着离开：顺手收掉
+  if (!idea.text.trim()) {            // Remove empty ideas on blur.
     ideasOf(view).splice(idx, 1);
     ta.closest('li')?.remove();
     changed();
@@ -909,7 +909,7 @@ el.list.addEventListener('focusout', e => {
   if (ta.value !== idea.text) { ta.value = idea.text; autosize(ta); }
 });
 
-// 双击划掉 / 恢复（第二下按下时不让浏览器去选词）
+// Double-click to cross out or restore (prevent word selection on the second press).
 el.list.addEventListener('mousedown', e => {
   if (e.detail > 1 && e.target.matches('textarea')) e.preventDefault();
 });
@@ -930,7 +930,7 @@ el.list.addEventListener('keydown', e => {
   if (plainEnter(e)) {
     e.preventDefault();
     if (!ideas[idx].text.trim()) { (taOf(li.nextElementSibling) || el.draft).focus(); return; }
-    if (s === 0 && en === 0) {                 // 在开头回车：在上面空出一条
+    if (s === 0 && en === 0) {                 // Enter at the start inserts an empty idea above.
       const n = mkIdea('');
       ideas.splice(idx, 0, n);
       const nl = rowEl(n); li.before(nl); autosize(taOf(nl)); taOf(nl).focus();
@@ -948,11 +948,11 @@ el.list.addEventListener('keydown', e => {
 
   if (e.key === 'Backspace' && s === 0 && en === 0) {
     const cur = splitLevel(v);
-    if (idx > 0) {                             // 合并到上一条
+    if (idx > 0) {                             // Merge into the previous idea.
       e.preventDefault();
       const prev = ideas[idx - 1], pos = prev.text.length;
       prev.text += cur.text;
-      if (cur.level) prev.level = cur.level;   // 行尾的 # 跟着行尾走
+      if (cur.level) prev.level = cur.level;   // Keep trailing priority markers with the end of the text.
       ideas.splice(idx, 1);
       const pta = taOf(li.previousElementSibling);
       setLevel(li.previousElementSibling, prev.level);
@@ -984,7 +984,7 @@ el.list.addEventListener('keydown', e => {
   if (e.key === 'Escape') ta.blur();
 });
 
-// 粘贴多行：每行变成一条想法（行尾的 # 照样算重要程度）
+// Paste multiple lines as separate ideas, preserving trailing # characters as priority markers.
 document.querySelector('.runway').addEventListener('paste', e => {
   const ta = e.target; if (!ta.matches('textarea')) return;
   const text = (e.clipboardData && e.clipboardData.getData('text/plain')) || '';
@@ -1016,7 +1016,7 @@ document.querySelector('.runway').addEventListener('paste', e => {
   changed();
 });
 
-// 删除（可撤销）
+// Deletion with undo
 el.list.addEventListener('click', e => {
   const b = e.target.closest('.del'); if (!b) return;
   const li = b.closest('li');
@@ -1039,7 +1039,7 @@ function undoDelete() {
   changed();
 }
 
-/* ================= 排序：拖动小圆点 / Alt+↑↓ ================= */
+/* ================= Reordering: drag the dot or press Alt+Up/Down ================= */
 function flip(nodes, mutate) {
   const before = nodes.map(n => n.offsetTop);
   mutate();
@@ -1121,7 +1121,7 @@ el.list.addEventListener('pointerdown', e => {
   grip.addEventListener('pointercancel', up);
 });
 
-/* ================= 提示条 ================= */
+/* ================= Toast notifications ================= */
 let toastTimer = 0;
 function toast(msg, action, fn) {
   const t = el.toast;
@@ -1137,7 +1137,7 @@ function toast(msg, action, fn) {
 }
 function hideToast() { el.toast.classList.remove('show'); }
 
-/* ================= 示例 ================= */
+/* ================= Demo ================= */
 function demoDoc() {
   const d = emptyDoc();
   const put = (n, list) => d.days.set(daysAgo(n), { ideas: list.map(t => {
@@ -1173,7 +1173,7 @@ function exitDemo() {
 $('#enter-demo').addEventListener('click', enterDemo);
 $('#exit-demo').addEventListener('click', exitDemo);
 
-/* ================= 全局 ================= */
+/* ================= Global handlers ================= */
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (!el.pop.hidden) { closePop(); el.chip.focus(); return; }

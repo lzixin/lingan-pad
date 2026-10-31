@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// 灵感停机坪：零依赖的本地小服务。
-// 只监听本机，给浏览器提供页面，并通过 /api/ideas 读写 ideas.md。
+// Lingan Pad: a lightweight local server with no dependencies.
+// Listens only on localhost, serves the page, and reads/writes ideas.md via /api/ideas.
 'use strict';
 
 const http = require('http');
@@ -40,7 +40,7 @@ if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) {
   process.exit(1);
 }
 
-/* ---------- ideas.md 读写 ---------- */
+/* ---------- Reading and writing ideas.md ---------- */
 const hash = s => crypto.createHash('sha1').update(s, 'utf8').digest('hex');
 
 function readIdeas() {
@@ -48,8 +48,8 @@ function readIdeas() {
   catch (e) { if (e.code === 'ENOENT') return ''; throw e; }
 }
 
-// 先写临时文件再改名，写到一半断电也不会留下半个文件。
-// 如果 ideas.md 是个软链接，就写到它指向的真实文件，不破坏链接。
+// Write to a temporary file, then rename it to avoid leaving a partial file if power is lost.
+// If ideas.md is a symlink, write to its target to preserve the link.
 function writeIdeas(text) {
   let target = FILE;
   try { target = fs.realpathSync(FILE); } catch {}
@@ -59,7 +59,7 @@ function writeIdeas(text) {
   try {
     fs.renameSync(tmp, target);
   } catch (e) {
-    // Windows 上文件被别的程序占用时改名会失败，退回直接覆盖
+    // On Windows, renaming can fail if another program has the file open; fall back to overwriting it.
     fs.writeFileSync(target, text, 'utf8');
     try { fs.unlinkSync(tmp); } catch {}
   }
@@ -91,7 +91,7 @@ function readBody(req) {
 }
 
 async function handle(req, res) {
-  // 只接受发给本机地址的请求，挡掉别的网站借道访问
+  // Accept only requests addressed to localhost to block access through other websites.
   if (!allowedHosts.has(req.headers.host)) return send(res, 403, 'forbidden');
   const { pathname } = new URL(req.url, URL_);
 
@@ -117,7 +117,7 @@ async function handle(req, res) {
       try { body = JSON.parse(await readBody(req)); } catch (e) { return sendJson(res, 400, { error: e.message }); }
       if (!body || typeof body.text !== 'string') return sendJson(res, 400, { error: 'text 必须是字符串' });
       const current = readIdeas();
-      // 页面上次看到的版本和文件现在不一样（比如 agent 刚改过）：退回去让页面先合并
+      // If the file has changed since the page last read it (e.g. an agent edited it), return it for merging.
       if (body.ifMatch && body.ifMatch !== hash(current)) return sendJson(res, 409, { text: current, hash: hash(current) });
       if (body.text !== current) writeIdeas(body.text);
       return sendJson(res, 200, { hash: hash(body.text) });
@@ -136,7 +136,7 @@ const server = http.createServer((req, res) => {
   });
 });
 
-/* ---------- 打开浏览器（优先 Chrome） ---------- */
+/* ---------- Opening the browser (prefer Chrome) ---------- */
 function openBrowser(url) {
   const tries =
     process.platform === 'darwin' ? [['open', ['-a', 'Google Chrome', url]], ['open', [url]]] :
@@ -157,7 +157,7 @@ function openBrowser(url) {
   attempt(0);
 }
 
-/* ---------- 启动 ---------- */
+/* ---------- Startup ---------- */
 function alreadyRunning(cb) {
   const req = http.get({ host: '127.0.0.1', port: PORT, path: '/api/ping', headers: { host: `localhost:${PORT}` }, timeout: 1500 }, r => {
     let b = '';
